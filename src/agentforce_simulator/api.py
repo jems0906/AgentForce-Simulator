@@ -406,7 +406,7 @@ def create_app(engine: WorkflowEngine | None = None) -> FastAPI:
             while bucket and now_ts - bucket[0] > window_seconds:
                 bucket.popleft()
             if len(bucket) >= config.export_verify_rate_limit_count:
-                LOGGER.warning("signature_verify_failed: rate_limit_exceeded request_id=%s", request_id)
+                LOGGER.info("signature_verify_rejected: rate_limit_exceeded request_id=%s", request_id)
                 await audit("rejected", "Rate limit exceeded.", payload.key_id)
                 return {"valid": False, "reason": "Verify rate limit exceeded."}
             bucket.append(now_ts)
@@ -414,32 +414,32 @@ def create_app(engine: WorkflowEngine | None = None) -> FastAPI:
         if not signing_keys:
             raise HTTPException(status_code=400, detail="EXPORT_SIGNING_SECRET is not configured on this server.")
         if payload.signature_algorithm != "HMAC-SHA256":
-            LOGGER.warning("signature_verify_failed: unsupported_algorithm request_id=%s", request_id)
+            LOGGER.info("signature_verify_rejected: unsupported_algorithm request_id=%s", request_id)
             await audit("failed", "Unsupported or missing signature algorithm.", payload.key_id)
             return {"valid": False, "reason": "Unsupported or missing signature algorithm."}
         if not payload.signature:
-            LOGGER.warning("signature_verify_failed: missing_signature request_id=%s", request_id)
+            LOGGER.info("signature_verify_rejected: missing_signature request_id=%s", request_id)
             await audit("failed", "Missing signature.", payload.key_id)
             return {"valid": False, "reason": "Missing signature."}
 
         if config.export_verify_max_age_seconds > 0:
             if not payload.generated_at:
-                LOGGER.warning("signature_verify_failed: missing_generated_at request_id=%s", request_id)
+                LOGGER.info("signature_verify_rejected: missing_generated_at request_id=%s", request_id)
                 await audit("failed", "Missing generated_at for replay protection.", payload.key_id)
                 return {"valid": False, "reason": "Missing generated_at for replay protection."}
             try:
                 generated_at = datetime.fromisoformat(payload.generated_at.replace("Z", "+00:00"))
             except ValueError:
-                LOGGER.warning("signature_verify_failed: invalid_generated_at request_id=%s", request_id)
+                LOGGER.info("signature_verify_rejected: invalid_generated_at request_id=%s", request_id)
                 await audit("failed", "Invalid generated_at timestamp.", payload.key_id)
                 return {"valid": False, "reason": "Invalid generated_at timestamp."}
             age_seconds = (now - generated_at).total_seconds()
             if age_seconds < -config.export_verify_max_clock_skew_seconds:
-                LOGGER.warning("signature_verify_failed: future_generated_at request_id=%s", request_id)
+                LOGGER.info("signature_verify_rejected: future_generated_at request_id=%s", request_id)
                 await audit("failed", "generated_at is too far in the future.", payload.key_id)
                 return {"valid": False, "reason": "generated_at is too far in the future."}
             if age_seconds > config.export_verify_max_age_seconds:
-                LOGGER.warning("signature_verify_failed: replay_window_expired request_id=%s", request_id)
+                LOGGER.info("signature_verify_rejected: replay_window_expired request_id=%s", request_id)
                 await audit("failed", "Signature replay window expired.", payload.key_id)
                 return {"valid": False, "reason": "Signature replay window expired."}
 
@@ -448,20 +448,20 @@ def create_app(engine: WorkflowEngine | None = None) -> FastAPI:
             for nonce in expired_nonces:
                 used_nonces.pop(nonce, None)
             if payload.nonce in used_nonces:
-                LOGGER.warning("signature_verify_failed: nonce_reused request_id=%s", request_id)
+                LOGGER.info("signature_verify_rejected: nonce_reused request_id=%s", request_id)
                 await audit("failed", "Nonce already used.", payload.key_id)
                 return {"valid": False, "reason": "Nonce already used.", "key_id": payload.key_id}
 
         key_id = payload.key_id or config.export_signing_key_id
         secret = signing_keys.get(key_id)
         if not secret:
-            LOGGER.warning("signature_verify_failed: unknown_key_id=%s request_id=%s", key_id, request_id)
+            LOGGER.info("signature_verify_rejected: unknown_key_id=%s request_id=%s", key_id, request_id)
             await audit("failed", f"Unknown key_id: {key_id}", key_id)
             return {"valid": False, "reason": f"Unknown key_id: {key_id}"}
         if key_id != config.export_signing_key_id:
             expiry = previous_key_expiry.get(key_id)
             if expiry and datetime.now(timezone.utc) > expiry:
-                LOGGER.warning("signature_verify_failed: expired_previous_key=%s request_id=%s", key_id, request_id)
+                LOGGER.info("signature_verify_rejected: expired_previous_key=%s request_id=%s", key_id, request_id)
                 await audit("failed", f"Expired key_id: {key_id}", key_id)
                 return {"valid": False, "reason": f"Expired key_id: {key_id}", "key_id": key_id}
         expected = _signature_for_payload(secret, payload.generated_at or "", key_id, payload.nonce, payload.data)
@@ -473,7 +473,7 @@ def create_app(engine: WorkflowEngine | None = None) -> FastAPI:
                 used_nonces[payload.nonce] = now + timedelta(seconds=ttl_seconds)
             await audit("succeeded", None, key_id)
         else:
-            LOGGER.warning("signature_verify_failed: signature_mismatch key_id=%s request_id=%s", key_id, request_id)
+            LOGGER.info("signature_verify_rejected: signature_mismatch key_id=%s request_id=%s", key_id, request_id)
             await audit("failed", "Signature mismatch.", key_id)
         return {"valid": valid, "key_id": key_id}
 
