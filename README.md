@@ -4,16 +4,10 @@ AgentForce Simulator is a Python asyncio workflow engine that demonstrates Sales
 
 ## Badges
 
-After creating the GitHub repository, replace `<owner>` and `<repo>` below:
-
-```markdown
-![CI](https://github.com/<owner>/<repo>/actions/workflows/ci.yml/badge.svg)
-[CI Workflow](https://github.com/<owner>/<repo>/actions/workflows/ci.yml)
-```
-
-You can paste those lines directly near the top of this README once the remote is available.
+[![CI](https://github.com/jems0906/AgentForce-Simulator/actions/workflows/ci.yml/badge.svg)](https://github.com/jems0906/AgentForce-Simulator/actions/workflows/ci.yml)
 
 Release notes are tracked in [CHANGELOG.md](CHANGELOG.md).
+Next iteration planning is tracked in [docs/v0.1.1-backlog.md](docs/v0.1.1-backlog.md).
 
 ## Features
 
