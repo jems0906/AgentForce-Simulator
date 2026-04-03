@@ -52,7 +52,10 @@ services:
       - key: API_AUTH_ENABLED
         value: true
       - key: API_READONLY_KEY
-        sync: false
+        fromService:
+          name: agentforce-api
+          type: web
+          envVarKey: API_READONLY_KEY
 
 databases:
   - name: agentforce-postgres

@@ -146,7 +146,7 @@ Deploy steps:
 2. In Render, create a new Blueprint and point it to this repository.
 3. Apply the blueprint from `render.yaml`.
 4. After first deploy, open the `agentforce-app` service and set `AGENTFORCE_API_BASE_URL` to your actual API URL, for example `https://agentforce-api.onrender.com`.
-5. Copy the generated `API_READONLY_KEY` from `agentforce-api` into `agentforce-app` as `API_READONLY_KEY` so Streamlit security actions can call protected API endpoints.
+5. Confirm `agentforce-app` has `API_READONLY_KEY` sourced from `agentforce-api` (the Blueprint wires this automatically via `fromService`).
 
 Manual preflight (optional, local):
 
