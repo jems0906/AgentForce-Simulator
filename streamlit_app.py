@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 import json
+import os
 from pathlib import Path
 from uuid import uuid4
 
@@ -310,7 +311,8 @@ else:
 st.divider()
 st.subheader("Security")
 default_api_key = config.api_readonly_key or config.api_admin_key or config.api_key or ""
-security_base_url = st.text_input("API base URL", value="http://127.0.0.1:8001", key="security_base_url")
+default_api_base_url = os.getenv("AGENTFORCE_API_BASE_URL", "http://127.0.0.1:8001")
+security_base_url = st.text_input("API base URL", value=default_api_base_url, key="security_base_url")
 security_api_key = st.text_input("API key", value=default_api_key, type="password", key="security_api_key")
 
 smoke_col, _ = st.columns([1, 2])
