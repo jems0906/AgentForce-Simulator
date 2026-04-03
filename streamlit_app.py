@@ -166,6 +166,44 @@ def fetch_security_audit(
         return response.json().get("items", [])
 
 
+def apply_audit_preset(preset: str) -> None:
+    if preset == "Failed-only":
+        st.session_state["security_audit_event_type"] = "export_verify"
+        st.session_state["security_audit_outcome"] = "failed"
+        st.session_state["security_audit_key_id"] = ""
+        st.session_state["security_audit_request_id"] = ""
+        return
+    if preset == "Rate-limited":
+        st.session_state["security_audit_event_type"] = "export_verify"
+        st.session_state["security_audit_outcome"] = "rejected"
+        st.session_state["security_audit_key_id"] = ""
+        st.session_state["security_audit_request_id"] = ""
+        return
+    if preset == "Nonce-reuse":
+        st.session_state["security_audit_event_type"] = "export_verify"
+        st.session_state["security_audit_outcome"] = "failed"
+        st.session_state["security_audit_key_id"] = ""
+        st.session_state["security_audit_request_id"] = ""
+        return
+
+
+def render_smoke_badges(smoke_result: dict) -> None:
+    summary = smoke_result.get("summary", {}) if isinstance(smoke_result, dict) else {}
+    checks = [
+        ("Health", summary.get("health") == "ok"),
+        ("Primary Verify", summary.get("first_verify_valid") is True),
+        ("Replay Block", summary.get("replay_verify_valid") is False and summary.get("replay_reason") == "Nonce already used."),
+        ("Rate Limit", summary.get("rate_limit_triggered_at") is not None),
+    ]
+    cols = st.columns(len(checks))
+    for idx, (label, passed) in enumerate(checks):
+        with cols[idx]:
+            status_text = "PASS" if passed else "FAIL"
+            status_color = "green" if passed else "red"
+            st.markdown(f"**{label}**  ")
+            st.markdown(f":{status_color}[{status_text}]")
+
+
 @st.cache_resource
 def get_engine() -> WorkflowEngine:
     engine = WorkflowEngine(AppConfig.from_env())
@@ -326,6 +364,7 @@ with smoke_col:
 
 smoke_result = st.session_state.get("security_smoke_result")
 if smoke_result:
+    render_smoke_badges(smoke_result)
     if smoke_result.get("ok"):
         st.success("Security smoke checks passed.")
     else:
@@ -339,16 +378,22 @@ if smoke_result:
     )
 
 st.markdown("#### Audit Explorer")
+preset_col, _ = st.columns([1, 3])
+with preset_col:
+    preset = st.selectbox("Preset", ["Custom", "Failed-only", "Rate-limited", "Nonce-reuse"], index=0)
+    if st.button("Apply Preset", width="stretch"):
+        apply_audit_preset(preset)
+
 a_col1, a_col2, a_col3, a_col4 = st.columns(4)
 with a_col1:
     audit_limit = st.number_input("Limit", min_value=1, max_value=1000, value=50, step=1)
 with a_col2:
-    audit_event_type = st.text_input("event_type", value="")
+    audit_event_type = st.text_input("event_type", value="", key="security_audit_event_type")
 with a_col3:
-    audit_outcome = st.text_input("outcome", value="")
+    audit_outcome = st.text_input("outcome", value="", key="security_audit_outcome")
 with a_col4:
-    audit_key_id = st.text_input("key_id", value="")
-audit_request_id = st.text_input("request_id", value="")
+    audit_key_id = st.text_input("key_id", value="", key="security_audit_key_id")
+audit_request_id = st.text_input("request_id", value="", key="security_audit_request_id")
 
 if st.button("Load Audit Events", width="stretch"):
     try:
