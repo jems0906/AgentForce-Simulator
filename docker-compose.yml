@@ -1,0 +1,74 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: agentforce
+      POSTGRES_USER: agentforce
+      POSTGRES_PASSWORD: agentforce
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentforce -d agentforce"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build:
+      context: .
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-heuristic}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-postgres}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql+asyncpg://agentforce:agentforce@postgres:5432/agentforce}
+      CONTEXT_WINDOW_CHARS: ${CONTEXT_WINDOW_CHARS:-6000}
+      SUPPORT_EXPERIMENT_ROLLOUT: ${SUPPORT_EXPERIMENT_ROLLOUT:-0.5}
+      API_AUTH_ENABLED: ${API_AUTH_ENABLED:-true}
+      API_KEY: ${API_KEY:-}
+      API_ADMIN_KEY: ${API_ADMIN_KEY:-}
+      API_READONLY_KEY: ${API_READONLY_KEY:-}
+      EXPORT_SIGNING_KEY_ID: ${EXPORT_SIGNING_KEY_ID:-current}
+      EXPORT_SIGNING_SECRET: ${EXPORT_SIGNING_SECRET:-}
+      EXPORT_SIGNING_PREVIOUS_KEYS: ${EXPORT_SIGNING_PREVIOUS_KEYS:-}
+      EXPORT_SIGNING_PREVIOUS_KEY_EXPIRY: ${EXPORT_SIGNING_PREVIOUS_KEY_EXPIRY:-}
+      EXPORT_VERIFY_MAX_AGE_SECONDS: ${EXPORT_VERIFY_MAX_AGE_SECONDS:-300}
+      EXPORT_VERIFY_MAX_CLOCK_SKEW_SECONDS: ${EXPORT_VERIFY_MAX_CLOCK_SKEW_SECONDS:-30}
+      EXPORT_VERIFY_RATE_LIMIT_COUNT: ${EXPORT_VERIFY_RATE_LIMIT_COUNT:-30}
+      EXPORT_VERIFY_RATE_LIMIT_WINDOW_SECONDS: ${EXPORT_VERIFY_RATE_LIMIT_WINDOW_SECONDS:-60}
+      SECURITY_AUDIT_RETENTION_MAX_EVENTS: ${SECURITY_AUDIT_RETENTION_MAX_EVENTS:-5000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8501:8501"
+
+  api:
+    build:
+      context: .
+    command: ["uvicorn", "api_app:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      LLM_PROVIDER: ${LLM_PROVIDER:-heuristic}
+      STORAGE_BACKEND: ${STORAGE_BACKEND:-postgres}
+      POSTGRES_DSN: ${POSTGRES_DSN:-postgresql+asyncpg://agentforce:agentforce@postgres:5432/agentforce}
+      CONTEXT_WINDOW_CHARS: ${CONTEXT_WINDOW_CHARS:-6000}
+      SUPPORT_EXPERIMENT_ROLLOUT: ${SUPPORT_EXPERIMENT_ROLLOUT:-0.5}
+      API_AUTH_ENABLED: ${API_AUTH_ENABLED:-true}
+      API_KEY: ${API_KEY:-}
+      API_ADMIN_KEY: ${API_ADMIN_KEY:-}
+      API_READONLY_KEY: ${API_READONLY_KEY:-}
+      EXPORT_SIGNING_KEY_ID: ${EXPORT_SIGNING_KEY_ID:-current}
+      EXPORT_SIGNING_SECRET: ${EXPORT_SIGNING_SECRET:-}
+      EXPORT_SIGNING_PREVIOUS_KEYS: ${EXPORT_SIGNING_PREVIOUS_KEYS:-}
+      EXPORT_SIGNING_PREVIOUS_KEY_EXPIRY: ${EXPORT_SIGNING_PREVIOUS_KEY_EXPIRY:-}
+      EXPORT_VERIFY_MAX_AGE_SECONDS: ${EXPORT_VERIFY_MAX_AGE_SECONDS:-300}
+      EXPORT_VERIFY_MAX_CLOCK_SKEW_SECONDS: ${EXPORT_VERIFY_MAX_CLOCK_SKEW_SECONDS:-30}
+      EXPORT_VERIFY_RATE_LIMIT_COUNT: ${EXPORT_VERIFY_RATE_LIMIT_COUNT:-30}
+      EXPORT_VERIFY_RATE_LIMIT_WINDOW_SECONDS: ${EXPORT_VERIFY_RATE_LIMIT_WINDOW_SECONDS:-60}
+      SECURITY_AUDIT_RETENTION_MAX_EVENTS: ${SECURITY_AUDIT_RETENTION_MAX_EVENTS:-5000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8001:8000"
+
+volumes:
+  postgres_data:

@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentforce-simulator"
+version = "0.1.0"
+description = "AgentForce Simulator: multi-agent workflow engine for support, analytics, and escalation demos"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "aioboto3>=13.1.1,<16.0.0",
+    "aiosqlite>=0.20.0,<1.0.0",
+    "asyncpg>=0.30.0,<1.0.0",
+    "fastapi>=0.115.12,<1.0.0",
+    "httpx>=0.28.1,<1.0.0",
+    "openai>=1.75.0,<3.0.0",
+    "pandas>=2.2.3,<4.0.0",
+    "python-dotenv>=1.0.1,<2.0.0",
+    "sqlalchemy>=2.0.40,<3.0.0",
+    "streamlit>=1.44.0,<2.0.0",
+    "uvicorn>=0.34.0,<1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest-cov>=6.1.1,<8.0.0",
+    "pytest>=8.3.5,<10.0.0",
+    "pytest-asyncio>=0.26.0,<2.0.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
