@@ -4,6 +4,15 @@ from dataclasses import dataclass
 import os
 
 
+def _normalize_postgres_dsn(raw_dsn: str) -> str:
+    dsn = (raw_dsn or "").strip()
+    if dsn.startswith("postgres://"):
+        return "postgresql+asyncpg://" + dsn[len("postgres://") :]
+    if dsn.startswith("postgresql://") and not dsn.startswith("postgresql+asyncpg://"):
+        return "postgresql+asyncpg://" + dsn[len("postgresql://") :]
+    return dsn
+
+
 @dataclass(slots=True)
 class AppConfig:
     llm_provider: str = "heuristic"
@@ -40,7 +49,7 @@ class AppConfig:
             ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
             ollama_model=os.getenv("OLLAMA_MODEL", "llama3.1"),
             storage_backend=os.getenv("STORAGE_BACKEND", "postgres").strip().lower(),
-            postgres_dsn=os.getenv("POSTGRES_DSN", "sqlite+aiosqlite:///./agentforce.db"),
+            postgres_dsn=_normalize_postgres_dsn(os.getenv("POSTGRES_DSN", "sqlite+aiosqlite:///./agentforce.db")),
             dynamodb_table=os.getenv("DYNAMODB_TABLE", "agentforce-simulator"),
             aws_region=os.getenv("AWS_REGION", "us-east-1"),
             context_window_chars=int(os.getenv("CONTEXT_WINDOW_CHARS", "6000")),

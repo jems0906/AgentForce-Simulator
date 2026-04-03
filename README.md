@@ -132,6 +132,34 @@ The compose file already wires `POSTGRES_DSN=postgresql+asyncpg://agentforce:age
 PostgreSQL stays on the internal Docker network by default, which avoids conflicts with any local database already using port `5432`.
 For API security settings, Compose reads values from the local `.env` file using variable substitution so keys are not hardcoded in `docker-compose.yml`.
 
+## Deploy On Render
+
+This repository includes a Render Blueprint at `render.yaml` that provisions:
+
+- `agentforce-postgres` (managed PostgreSQL)
+- `agentforce-api` (FastAPI)
+- `agentforce-app` (Streamlit)
+
+Deploy steps:
+
+1. Push your branch/repo to GitHub.
+2. In Render, create a new Blueprint and point it to this repository.
+3. Apply the blueprint from `render.yaml`.
+4. After first deploy, open the `agentforce-app` service and set `AGENTFORCE_API_BASE_URL` to your actual API URL, for example `https://agentforce-api.onrender.com`.
+5. Copy the generated `API_READONLY_KEY` from `agentforce-api` into `agentforce-app` as `API_READONLY_KEY` so Streamlit security actions can call protected API endpoints.
+
+Manual preflight (optional, local):
+
+- `python scripts/render_preflight.py --service api`
+- `python scripts/render_preflight.py --service app`
+
+Notes:
+
+- Render PostgreSQL often provides `postgres://...` connection strings; startup config normalizes this automatically to `postgresql+asyncpg://...`.
+- Health checks are configured on `GET /api/health` for the API service.
+- If you rotate keys, keep `API_READONLY_KEY` synchronized between the API and Streamlit services.
+- Render start commands run `scripts/render_preflight.py` before launching each service, and startup fails fast if required env vars are missing.
+
 ## REST API
 
 Run the API locally:
