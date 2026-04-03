@@ -229,6 +229,20 @@ The script verifies:
 - recent audit event retrieval
 - rate-limit trigger probing (best-effort)
 
+## Deployment Helper
+
+Run a single command to bring services up, check health, and execute smoke validation:
+
+```bash
+python scripts/deploy_and_verify.py --base-url http://127.0.0.1:8001 --api-key <readonly-key>
+```
+
+Useful flags:
+
+- `--no-build`: skips Docker image rebuild
+- `--skip-smoke`: only performs compose up + health check
+- `--health-timeout-seconds <n>`: custom health wait timeout
+
 ## Storage Options
 
 - `STORAGE_BACKEND=postgres`: Uses the SQLAlchemy async backend. For local no-dependency demos, set `POSTGRES_DSN=sqlite+aiosqlite:///./agentforce.db`. For PostgreSQL, use `postgresql+asyncpg://agentforce:agentforce@localhost:5432/agentforce`.
