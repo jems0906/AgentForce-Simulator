@@ -1,0 +1,59 @@
+services:
+  - type: web
+    name: agentforce-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install -e .
+    startCommand: python scripts/render_preflight.py --service api && uvicorn api_app:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: STORAGE_BACKEND
+        value: postgres
+      - key: POSTGRES_DSN
+        fromDatabase:
+          name: agentforce-postgres
+          property: connectionString
+      - key: API_AUTH_ENABLED
+        value: true
+      - key: API_ADMIN_KEY
+        generateValue: true
+      - key: API_READONLY_KEY
+        generateValue: true
+      - key: EXPORT_SIGNING_KEY_ID
+        value: render-current
+      - key: EXPORT_SIGNING_SECRET
+        generateValue: true
+      - key: EXPORT_VERIFY_MAX_AGE_SECONDS
+        value: "300"
+      - key: EXPORT_VERIFY_MAX_CLOCK_SKEW_SECONDS
+        value: "30"
+      - key: EXPORT_VERIFY_RATE_LIMIT_COUNT
+        value: "30"
+      - key: EXPORT_VERIFY_RATE_LIMIT_WINDOW_SECONDS
+        value: "60"
+      - key: SECURITY_AUDIT_RETENTION_MAX_EVENTS
+        value: "5000"
+
+  - type: web
+    name: agentforce-app
+    runtime: python
+    plan: starter
+    buildCommand: pip install -e .
+    startCommand: python scripts/render_preflight.py --service app && streamlit run streamlit_app.py --server.address=0.0.0.0 --server.port=$PORT --server.headless=true
+    envVars:
+      - key: STORAGE_BACKEND
+        value: postgres
+      - key: POSTGRES_DSN
+        fromDatabase:
+          name: agentforce-postgres
+          property: connectionString
+      - key: AGENTFORCE_API_BASE_URL
+        value: https://agentforce-api.onrender.com
+      - key: API_AUTH_ENABLED
+        value: true
+      - key: API_READONLY_KEY
+        sync: false
+
+databases:
+  - name: agentforce-postgres
+    plan: starter

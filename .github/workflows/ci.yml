@@ -26,6 +26,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            pyproject.toml
 
       - name: Install dependencies
         run: |
@@ -58,4 +61,14 @@ jobs:
 
       - name: Run security smoke script
         run: |
-          python scripts/security_smoke.py --base-url http://127.0.0.1:8000
+          mkdir -p artifacts
+          set -o pipefail
+          python scripts/security_smoke.py --base-url http://127.0.0.1:8000 | tee artifacts/security-smoke-report.json
+
+      - name: Upload smoke report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-smoke-report
+          path: artifacts/security-smoke-report.json
+          if-no-files-found: warn
