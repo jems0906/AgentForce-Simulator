@@ -56,4 +56,3 @@ services:
 
 databases:
   - name: agentforce-postgres
-    plan: starter
